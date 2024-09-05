@@ -3,20 +3,23 @@
  What is the most purchased item on the menu and how many times 
  was it purchased by all customers?
  */
-SELECT customer_id,
-    product_name,
-    ct AS count
-FROM (
-        SELECT sales.customer_id,
-            menu.product_name,
-            COUNT(*) as ct,
-            ROW_NUMBER() OVER(
-                PARTITION BY customer_id
-                ORDER BY COUNT(*) DESC
-            ) AS flag
-        FROM sales
-            JOIN menu ON sales.product_id = menu.product_id
-        GROUP BY sales.customer_id,
-            menu.product_name
+WITH most_ordered_item AS (
+    SELECT menu.product_name
+    FROM sales
+        JOIN menu ON sales.product_id = menu.product_id
+    GROUP BY menu.product_name
+    ORDER BY COUNT(*) DESC
+    LIMIT 1
+)
+SELECT menu.product_name,
+    sales.customer_id,
+    COUNT(*) AS count
+FROM sales
+    JOIN menu ON sales.product_id = menu.product_id
+WHERE menu.product_name = (
+        SELECT product_name
+        FROM most_ordered_item
     )
-WHERE flag = 1
+GROUP BY product_name,
+    customer_id
+ORDER BY customer_id
